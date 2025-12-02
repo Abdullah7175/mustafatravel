@@ -27,7 +27,7 @@ const ContactPage: React.FC = () => {
               </svg>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Email Us</h3>
-            <p className="text-gray-600">inquiries@mtumrah.com</p>
+            <p className="text-gray-600">inquiries@mustafatravel.com</p>
           </div>
           
           <div className="text-center">

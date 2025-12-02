@@ -2,18 +2,18 @@
 import axios, { InternalAxiosRequestConfig } from "axios";
 
 /** ---------- Config ---------- **/
-// Helper to normalize hostname or full URL to always use www.mtumrah.com
+// Helper to normalize hostname or full URL to always use www.mustafatravel.com
 const normalizeHostname = (hostname: string): string => {
-  // If hostname is mtumrah.com, return www.mtumrah.com
-  if (hostname === 'mtumrah.com') {
-    return 'www.mtumrah.com';
+  // If hostname is mustafatravel.com, return www.mustafatravel.com
+  if (hostname === 'mustafatravel.com') {
+    return 'www.mustafatravel.com';
   }
   // If hostname already has www or is localhost, return as is
   if (hostname.includes('www.') || hostname === 'localhost' || hostname.includes('localhost:')) {
     return hostname;
   }
   // For other domains without www, add www (optional - can be removed if not needed)
-  // For now, only handle mtumrah.com specifically
+  // For now, only handle mustafatravel.com specifically
   return hostname;
 };
 
@@ -28,8 +28,8 @@ const normalizeApiBase = (baseUrl: string | undefined): string => {
   // If it's a full URL, normalize the hostname part
   try {
     const url = new URL(baseUrl);
-    if (url.hostname === 'mtumrah.com') {
-      url.hostname = 'www.mtumrah.com';
+    if (url.hostname === 'mustafatravel.com') {
+      url.hostname = 'www.mustafatravel.com';
       return url.toString().replace(/\/$/, ''); // Remove trailing slash
     }
     return baseUrl.replace(/\/$/, ''); // Remove trailing slash

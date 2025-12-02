@@ -1,8 +1,8 @@
 module.exports = {
   apps: [
     {
-      name: "mtumrah-frontend",
-      cwd: "/opt/mtumrah-frontend-final",
+      name: "mustafa-frontend",
+      cwd: "/opt/mustafa-frontend-final",
       script: "npm",
       args: "run dev",
       watch: ["src", "index.html"],

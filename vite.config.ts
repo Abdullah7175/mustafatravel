@@ -19,7 +19,7 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
-    allowedHosts: ['miqattravels.com', 'www.miqattravels.com'],
+    allowedHosts: ['booking.mustafatravelsandtour.com', 'www.booking.mustafatravelsandtour.com', 'localhost', '0.0.0.0', '34.224.169.168'],
     hmr: {
       overlay: false, // Disable error overlay to prevent blocking
     },

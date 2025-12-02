@@ -819,7 +819,7 @@ const AdminDashboard: React.FC = () => {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
-        doc.text('MARWAH TRAVELS UMRAH', margin, 50);
+        doc.text('MUSTAFA TRAVEL', margin, 50);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.text('Your Journey, Our Commitment', margin, 68);
@@ -841,12 +841,12 @@ const AdminDashboard: React.FC = () => {
         doc.setFontSize(9);
         doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
         doc.setFont('helvetica', 'bold');
-        doc.text('MARWAH TRAVELS UMRAH', margin, footerY + 15);
+        doc.text('MUSTAFA TRAVEL', margin, footerY + 15);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
-        doc.text('info@marwahtravels.com', margin, footerY + 28);
+        doc.text('info@mustafatravel.com', margin, footerY + 28);
         doc.text('+92 (316) 503-2128', margin, footerY + 40);
-        doc.text('www.marwahtravels.com', pageWidth / 2, footerY + 28, { align: 'center' });
+        doc.text('www.mustafatravel.com', pageWidth / 2, footerY + 28, { align: 'center' });
         doc.text('24/7 Customer Support', pageWidth / 2, footerY + 40, { align: 'center' });
         doc.text('Licensed Travel Agency', pageWidth - margin, footerY + 28, { align: 'right' });
         doc.text('IATA Certified', pageWidth - margin, footerY + 40, { align: 'right' });
@@ -1384,7 +1384,7 @@ const AdminDashboard: React.FC = () => {
 
       addFooter();
 
-      doc.save(`MARWAH-Booking-${full.id}.pdf`);
+      doc.save(`MUSTAFA-Booking-${full.id}.pdf`);
     } catch (e: any) {
       console.error('Full PDF failed', e);
       const errorMessage = e?.response?.data?.message || e?.message || 'Failed to generate full PDF';

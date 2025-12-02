@@ -67,7 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       >
         <div className="flex items-center space-x-3 px-6 py-6 border-b border-slate-700">
           <div className="w-15 h-15  rounded-xl flex items-center justify-center p-1">
-            <img src="/logo2.png" alt="Marwah Travels Umrah" className="w-full h-full object-contain" />
+            <img src="/mustafa.png" alt="Mustafa Travel" className="w-full h-full object-contain" />
           </div>
           <div>
             {/* <h1 className="text-white font-semibold text-lg">MARWAH TRAVELS</h1> */}

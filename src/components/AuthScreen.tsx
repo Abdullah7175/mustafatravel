@@ -64,7 +64,7 @@ const AuthScreen: React.FC = () => {
         {/* Logo/Brand */}
         <div className="text-center mb-8">
           <div className="rounded-2xl p-4 flex items-center justify-center mx-auto mb-4 w-42 h-42">
-            <img src="/logo2.png" alt="Marwah Travels Umrah" className="w-full h-full object-contain" />
+            <img src="/mustafa.png" alt="Mustafa Travel" className="w-full h-full object-contain" />
           </div>
           {/* <h1 className="text-2xl sm:text-4xl font-bold text-white mb-2">MARWAH TRAVELS UMRAH</h1> */}
           {/* <p className="text-gray-600">Management System</p> */}

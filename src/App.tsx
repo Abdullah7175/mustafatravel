@@ -72,7 +72,7 @@ const AppContent: React.FC = () => {
             <span className="text-white font-bold text-sm">M</span>
           </div>
           <h1 className="font-semibold text-gray-900 text-sm sm:text-base">
-            MARWAH TRAVELS
+            MUSTAFA TRAVEL
           </h1>
         </div>
         <button

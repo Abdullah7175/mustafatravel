@@ -587,7 +587,7 @@ const Bookings: React.FC = () => {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
-        doc.text('MARWAH TRAVELS UMRAH', margin, 50);
+        doc.text('MUSTAFA TRAVEL', margin, 50);
         
         // Tagline
         doc.setFontSize(10);
@@ -621,15 +621,15 @@ const Bookings: React.FC = () => {
         doc.setFontSize(9);
         doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
         doc.setFont('helvetica', 'bold');
-        doc.text('MARWAH TRAVELS UMRAH', margin, footerY + 15);
+        doc.text('MUSTAFA TRAVEL', margin, footerY + 15);
         
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
-        doc.text('info@marwahtravels.com', margin, footerY + 28);
+        doc.text('info@mustafatravel.com', margin, footerY + 28);
         doc.text('+92 (316) 503-2128', margin, footerY + 40);
         
         // Website and support
-        doc.text('www.marwahtravels.com', pageWidth / 2, footerY + 28, { align: 'center' });
+        doc.text('www.mustafatravel.com', pageWidth / 2, footerY + 28, { align: 'center' });
         doc.text('24/7 Customer Support', pageWidth / 2, footerY + 40, { align: 'center' });
         
         // License info
@@ -1194,7 +1194,7 @@ const Bookings: React.FC = () => {
       // Add footer
       addFooter();
 
-      doc.save(`MARWAH-Booking-${full.id}.pdf`);
+      doc.save(`MUSTAFA-Booking-${full.id}.pdf`);
     } catch (e: any) {
       console.error('Full PDF failed', e);
       const errorMessage = e?.response?.data?.message || e?.message || 'Failed to generate full PDF';
@@ -1264,7 +1264,7 @@ const Bookings: React.FC = () => {
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('MARWAH TRAVELS UMRAH', margin, y + 20);
+      doc.text('MUSTAFA TRAVEL', margin, y + 20);
       
       // Company Address
       doc.setFontSize(10);
@@ -1274,13 +1274,13 @@ const Bookings: React.FC = () => {
 
       // Contact Information (to the right of address)
       const contactX = 250;
-      doc.text('accounts@marwahtravelsumrah.com', contactX, y + 35);
+      doc.text('accounts@mustafatravel.com', contactX, y + 35);
       doc.text('+1 (646) 699-9732', contactX, y + 50);
-      doc.text('www.mtumrah.com', contactX, y + 65);
+      doc.text('www.mustafatravel.com', contactX, y + 65);
 
-      // Logo (Top Right) - Add logo2.png
+      // Logo (Top Right) - Add mustafa.png
       try {
-        const logoUrl = '/logo.png';
+        const logoUrl = '/mustafa.png';
         const img = new Image();
         img.crossOrigin = 'anonymous';
         
@@ -1297,7 +1297,7 @@ const Bookings: React.FC = () => {
         const logoY = y; // Top align
         doc.addImage(img, 'PNG', logoX, logoY, logoWidth, logoHeight);
       } catch (logoError) {
-        console.log('Could not load logo2.png for invoice:', logoError);
+        console.log('Could not load mustafa.png for invoice:', logoError);
         // Continue without logo if loading fails
       }
       
@@ -1585,7 +1585,7 @@ const Bookings: React.FC = () => {
       addTermsText('Note: In case of payment of land package through credit card there will be a Merchant charge.');
 
       // Save the PDF
-      doc.save(`MARWAH-Invoice-${invoiceNo}.pdf`);
+      doc.save(`MUSTAFA-Invoice-${invoiceNo}.pdf`);
     } catch (e: any) {
       console.error('Invoice generation failed', e);
       const errorMessage = e?.response?.data?.message || e?.message || 'Failed to generate invoice PDF';
