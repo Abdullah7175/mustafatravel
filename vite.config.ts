@@ -5,13 +5,23 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    exclude: ['lucide-react'],
+    // Include lucide-react for proper optimization
+    include: ['lucide-react'],
   },
   // Prevent Vite from reading files outside the project
   server: {
     fs: {
       strict: true,
-      deny: ['.git'],
+      // Deny access to .git directory and other sensitive files
+      deny: [
+        '.git',
+        '**/.git',
+        '**/.git/**',
+        '**/.git/objects/**',
+        '**/node_modules/.git/**',
+        '../.git',
+        '../.git/**',
+      ],
     },
     proxy: {
       '/api': {
@@ -25,5 +35,12 @@ export default defineConfig({
     },
     // Handle malformed URIs gracefully
     middlewareMode: false,
+  },
+  // Build configuration
+  build: {
+    // Exclude .git from build
+    rollupOptions: {
+      external: [],
+    },
   },
 });
