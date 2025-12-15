@@ -159,7 +159,14 @@ function normalizeForPdf(b: any) {
 
     transport: {
       pickupLocation: b?.transport?.pickupLocation || b?.pickupLocation || '',
-      transportType: b?.transport?.transportType || b?.transportType || '',
+      transportType: (() => {
+        // If we have legs, use the vehicle type from the first leg
+        if (legs.length > 0 && legs[0]?.vehicleType) {
+          return legs[0].vehicleType;
+        }
+        // Otherwise use the stored transportType
+        return b?.transport?.transportType || b?.transportType || '';
+      })(),
       legs: legs.map((l: any) => ({
         from: l?.from || '',
         to: l?.to || '',
@@ -587,12 +594,12 @@ const Bookings: React.FC = () => {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
-        doc.text('MUSTAFA TRAVEL', margin, 50);
+        doc.text('MUSTAFA TRAVELS & TOUR', margin, 50);
         
         // Tagline
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.text('Your Journey, Our Commitment', margin, 68);
+        doc.text('Luxury Umrah Partner 🕋', margin, 68);
         
         // Document title on right
         doc.setFontSize(10);
@@ -625,16 +632,11 @@ const Bookings: React.FC = () => {
         
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
-        doc.text('info@mustafatravel.com', margin, footerY + 28);
-        doc.text('+92 (316) 503-2128', margin, footerY + 40);
+        doc.text('info@mustafatravelsandtour.com', margin, footerY + 28);
+        doc.text('+1 845-359-3888', margin, footerY + 40);
         
-        // Website and support
-        doc.text('www.mustafatravel.com', pageWidth / 2, footerY + 28, { align: 'center' });
-        doc.text('24/7 Customer Support', pageWidth / 2, footerY + 40, { align: 'center' });
-        
-        // License info
-        doc.text('Licensed Travel Agency', pageWidth - margin, footerY + 28, { align: 'right' });
-        doc.text('IATA Certified', pageWidth - margin, footerY + 40, { align: 'right' });
+        // Website
+        doc.text('www.mustafatravelsandtour.com', pageWidth / 2, footerY + 28, { align: 'center' });
         
         doc.setTextColor(0, 0, 0);
       };
@@ -783,17 +785,20 @@ const Bookings: React.FC = () => {
       doc.setFont('helvetica', 'bold');
       doc.text('Booking Date:', labelX, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(formatDate(full.dates.bookingDate), valueX, y); y += 16;
+      const bookingDateStr = full.dates.bookingDate || data?.date;
+      doc.text(formatDate(bookingDateStr), valueX, y); y += 16;
       
       doc.setFont('helvetica', 'bold');
       doc.text('Departure Date:', labelX, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(formatDate(full.dates.departureDate), valueX, y); y += 16;
+      const departureDateStr = full.dates.departureDate || data?.departureDate || data?.flight?.departureDate;
+      doc.text(formatDate(departureDateStr), valueX, y); y += 16;
       
       doc.setFont('helvetica', 'bold');
       doc.text('Return Date:', labelX, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(formatDate(full.dates.returnDate), valueX, y); y += 16;
+      const returnDateStr = full.dates.returnDate || data?.returnDate || data?.flight?.returnDate;
+      doc.text(formatDate(returnDateStr), valueX, y); y += 16;
       
       doc.setFont('helvetica', 'bold');
       doc.text('Package:', labelX, y);
@@ -1264,19 +1269,24 @@ const Bookings: React.FC = () => {
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
-      doc.text('MUSTAFA TRAVEL', margin, y + 20);
+      doc.text('MUSTAFA TRAVELS & TOUR', margin, y + 20);
+      
+      // Tagline
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Luxury Umrah Partner 🕋', margin, y + 35);
       
       // Company Address
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text('15636 71st Ave', margin, y + 35);
-      doc.text('Flushing, NY 11367', margin, y + 50);
+      doc.text('15636 71st Ave', margin, y + 50);
+      doc.text('Flushing, NY 11367', margin, y + 65);
 
       // Contact Information (to the right of address)
       const contactX = 250;
-      doc.text('accounts@mustafatravel.com', contactX, y + 35);
-      doc.text('+1 (646) 699-9732', contactX, y + 50);
-      doc.text('www.mustafatravel.com', contactX, y + 65);
+      doc.text('info@mustafatravelsandtour.com', contactX, y + 50);
+      doc.text('+1 845-359-3888', contactX, y + 65);
+      doc.text('www.mustafatravelsandtour.com', contactX, y + 80);
 
       // Logo (Top Right) - Add mustafa.png
       try {
@@ -1317,11 +1327,7 @@ const Bookings: React.FC = () => {
       doc.setFont('helvetica', 'normal');
       doc.text(data.customerName || '—', margin + 10, y + 30);
       
-      // Ship To (to the right)
-      doc.setFont('helvetica', 'bold');
-      doc.text('Ship to', margin + 250, y + 15);
-      doc.setFont('helvetica', 'normal');
-      doc.text(data.customerName || '—', margin + 250, y + 30);
+      // Ship To removed per client request
       
       y += 60;
 
@@ -1345,9 +1351,9 @@ const Bookings: React.FC = () => {
       doc.text(`Invoice no.: ${invoiceNo}`, margin, y + 20);
       doc.text('Terms: Due on receipt', margin, y + 35);
       
-      // Dates
-      const invoiceDate = formatDate(data.date || new Date().toISOString());
-      const dueDate = invoiceDate;
+      // Dates - use actual booking dates
+      const invoiceDate = formatDate(data.date || data.departureDate || new Date().toISOString());
+      const dueDate = formatDate(data.paymentDue?.dueDate || data.returnDate || invoiceDate);
       doc.text(`Invoice date: ${invoiceDate}`, margin, y + 50);
       doc.text(`Due date: ${dueDate}`, margin, y + 65);
       
@@ -1392,7 +1398,7 @@ const Bookings: React.FC = () => {
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         
-        const itemDate = formatDate(data.departureDate || data.date);
+        const itemDate = formatDate(data.departureDate || data.date || data.flight?.departureDate);
         const qty = Number(row.quantity) || 0;
         const rate = Number(row.salePerQty) || 0;
         const amount = qty * rate;

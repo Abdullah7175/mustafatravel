@@ -68,7 +68,8 @@ export interface BookingFormData {
   departureDate: string;
   returnDate: string;
   flightClass: 'economy' | 'business' | 'first';
-  pnr?: string;                   // 6 alphanumeric
+  pnr?: string;                   // 6 alphanumeric (legacy single PNR)
+  pnrs?: string[];                 // Multiple PNRs support
   flightsItinerary?: string;      // free text paste area
 
   // Hotels (legacy single + multiple hotels)
@@ -335,7 +336,8 @@ function buildBookingPayload(formData: BookingFormData, user: MinimalUser | null
       raw: formData.flightsItinerary || '',
       itineraryLines: (formData.flightsItinerary || '').split('\n').filter(Boolean),
     },
-    pnr: (formData.pnr || '').toUpperCase(),
+    pnr: (formData.pnr || (formData.pnrs && formData.pnrs.length > 0 ? formData.pnrs[0] : '') || '').toUpperCase(),
+    pnrs: (formData.pnrs || (formData.pnr ? [formData.pnr] : [])).map(p => sanitizePNR(p)).filter(Boolean),
     departureCity: formData.departureCity || '',
     arrivalCity: formData.arrivalCity || '',
     flightClass: formData.flightClass || 'economy',
@@ -496,7 +498,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
     cardNumber: '', expiryDate: '', cvv: '', cardholderName: '',
     // flights
     departureCity: '', arrivalCity: '', departureDate: '', returnDate: '', flightClass: 'economy',
-    pnr: '', flightsItinerary: '',
+    pnr: '', pnrs: [], flightsItinerary: '',
     // hotels (legacy + array)
     hotelName: '', roomType: '', checkIn: '', checkOut: '', hotels: emptyHotels,
     // visa
@@ -562,6 +564,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
         departureDate: initialData.departureDate || '',
         returnDate: initialData.returnDate || '',
         pnr: initialData.pnr || '',
+        pnrs: initialData.pnrs || (initialData.pnr ? [initialData.pnr] : []),
         flightsItinerary: initialData.flightsItinerary || '',
         flightClass: initialData.flightClass || 'economy',
         
@@ -1134,23 +1137,63 @@ const BookingModal: React.FC<BookingModalProps> = ({
                     {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date}</p>}
                   </div>
 
-                  {/* PNR */}
+                  {/* Departure Date */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      PNR <span className="text-gray-400">(optional, 6 alphanumeric)</span>
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Departure Date</label>
                     <input
-                      data-testid="pnr"
-                      type="text"
-                      name="pnr"
-                      value={formData.pnr || ''}
+                      data-testid="departureDate"
+                      type="date"
+                      name="departureDate"
+                      value={formData.departureDate || ''}
                       onChange={handleInputChange}
-                      placeholder="e.g. ABC12D"
                       className={`w-full px-3 py-2 border-b focus:outline-none transition-colors ${
-                        errors.pnr ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                        errors.departureDate ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
                       }`}
                     />
-                    {errors.pnr && <p className="text-red-500 text-xs mt-1">{errors.pnr}</p>}
+                    {errors.departureDate && <p className="text-red-500 text-xs mt-1">{errors.departureDate}</p>}
+                  </div>
+
+                  {/* Return Date */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Return Date</label>
+                    <input
+                      data-testid="returnDate"
+                      type="date"
+                      name="returnDate"
+                      value={formData.returnDate || ''}
+                      onChange={handleInputChange}
+                      min={formData.departureDate || undefined}
+                      className={`w-full px-3 py-2 border-b focus:outline-none transition-colors ${
+                        errors.returnDate ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                      }`}
+                    />
+                    {errors.returnDate && <p className="text-red-500 text-xs mt-1">{errors.returnDate}</p>}
+                  </div>
+
+                  {/* Departure City */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Departure City</label>
+                    <input
+                      type="text"
+                      name="departureCity"
+                      value={formData.departureCity || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border-b border-gray-300 focus:border-blue-500 focus:outline-none transition-colors"
+                      placeholder="e.g. JFK"
+                    />
+                  </div>
+
+                  {/* Arrival City */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Arrival City</label>
+                    <input
+                      type="text"
+                      name="arrivalCity"
+                      value={formData.arrivalCity || ''}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border-b border-gray-300 focus:border-blue-500 focus:outline-none transition-colors"
+                      placeholder="e.g. JED"
+                    />
                   </div>
 
                   <div className="sm:col-span-2">
@@ -1166,6 +1209,58 @@ const BookingModal: React.FC<BookingModalProps> = ({
                       <option value="first">First Class</option>
                     </select>
                   </div>
+                </div>
+
+                {/* Multiple PNRs Section */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      PNR(s) <span className="text-gray-400">(optional, 6 alphanumeric each)</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentPnrs = formData.pnrs || (formData.pnr ? [formData.pnr] : []);
+                        updateForm({ pnrs: [...currentPnrs, ''] });
+                      }}
+                      className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center"
+                    >
+                      <Plus className="h-4 w-4 mr-1" /> Add PNR
+                    </button>
+                  </div>
+                  {(formData.pnrs || (formData.pnr ? [formData.pnr] : [])).map((pnr, idx) => (
+                    <div key={idx} className="flex items-center gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={pnr || ''}
+                        onChange={(e) => {
+                          const sanitized = sanitizePNR(e.target.value);
+                          const currentPnrs = formData.pnrs || (formData.pnr ? [formData.pnr] : []);
+                          const updated = [...currentPnrs];
+                          updated[idx] = sanitized;
+                          updateForm({ pnrs: updated, pnr: updated[0] || '' }); // Keep first PNR in legacy field
+                        }}
+                        placeholder="e.g. ABC12D"
+                        maxLength={6}
+                        className={`flex-1 px-3 py-2 border-b focus:outline-none transition-colors ${
+                          errors[`pnr_${idx}`] ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'
+                        }`}
+                      />
+                      {(formData.pnrs || (formData.pnr ? [formData.pnr] : [])).length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentPnrs = formData.pnrs || (formData.pnr ? [formData.pnr] : []);
+                            const updated = currentPnrs.filter((_, i) => i !== idx);
+                            updateForm({ pnrs: updated.length > 0 ? updated : undefined, pnr: updated[0] || '' });
+                          }}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
