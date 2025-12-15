@@ -599,7 +599,7 @@ const Bookings: React.FC = () => {
         // Tagline
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.text('Luxury Umrah Partner 🕋', margin, 68);
+        doc.text('Luxury Umrah Partner', margin, 68);
         
         // Document title on right
         doc.setFontSize(10);
@@ -1274,7 +1274,7 @@ const Bookings: React.FC = () => {
       // Tagline
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text('Luxury Umrah Partner 🕋', margin, y + 35);
+      doc.text('Luxury Umrah Partner', margin, y + 35);
       
       // Company Address
       doc.setFontSize(10);
@@ -1286,7 +1286,7 @@ const Bookings: React.FC = () => {
       const contactX = 250;
       doc.text('info@mustafatravelsandtour.com', contactX, y + 50);
       doc.text('+1 845-359-3888', contactX, y + 65);
-      doc.text('www.mustafatravelsandtour.com', contactX, y + 80);
+      // doc.text('www.mustafatravelsandtour.com', contactX, y + 80);
 
       // Logo (Top Right) - Add mustafa.png
       try {
