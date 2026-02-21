@@ -115,13 +115,20 @@ const AdminDashboard: React.FC = () => {
     return 0;
   };
 
-  // Filter bookings by dashboard period (use createdAt = when booking was made; include if date missing/invalid so none are hidden)
+  // Date-only YYYY-MM-DD in local time so week/month/year filters work regardless of timezone
+  const toLocalDateString = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  // Filter bookings by dashboard period (use createdAt; compare by calendar date so filters work)
   const getFilteredBookingsByDashboardPeriod = () => {
     if (dashboardPeriod === 'all') return dashboardBookings;
 
     const now = new Date();
     let startDate: Date;
-
     switch (dashboardPeriod) {
       case 'week':
         startDate = new Date(now);
@@ -136,17 +143,20 @@ const AdminDashboard: React.FC = () => {
       default:
         return dashboardBookings;
     }
+    const startStr = toLocalDateString(startDate);
+    const endStr = toLocalDateString(now);
 
     return dashboardBookings.filter(booking => {
       const raw = (booking as any).createdAt ?? (booking as any).date;
       if (raw == null || raw === '') return true;
       const bookingDate = new Date(raw);
       if (Number.isNaN(bookingDate.getTime())) return true;
-      return bookingDate >= startDate && bookingDate <= now;
+      const bookingStr = toLocalDateString(bookingDate);
+      return bookingStr >= startStr && bookingStr <= endStr;
     });
   };
 
-  // Filter inquiries by dashboard period
+  // Filter inquiries by dashboard period (same date-only comparison)
   const getFilteredInquiriesByDashboardPeriod = () => {
     if (dashboardPeriod === 'all') return inquiries;
     const now = new Date();
@@ -165,9 +175,13 @@ const AdminDashboard: React.FC = () => {
       default:
         return inquiries;
     }
+    const startStr = toLocalDateString(startDate);
+    const endStr = toLocalDateString(now);
     return inquiries.filter(inquiry => {
       const inquiryDate = new Date(inquiry.createdAt || 0);
-      return inquiryDate >= startDate && inquiryDate <= now;
+      if (Number.isNaN(inquiryDate.getTime())) return false;
+      const inquiryStr = toLocalDateString(inquiryDate);
+      return inquiryStr >= startStr && inquiryStr <= endStr;
     });
   };
 
@@ -233,7 +247,7 @@ const AdminDashboard: React.FC = () => {
 
 
 
-  // Filter bookings based on dashboard period (same logic: use createdAt, include if missing/invalid)
+  // Filter bookings for charts (same date-only comparison as stats)
   const getFilteredBookings = () => {
     if (dashboardPeriod === 'all') return dashboardBookings;
     const now = new Date();
@@ -252,12 +266,15 @@ const AdminDashboard: React.FC = () => {
       default:
         return dashboardBookings;
     }
+    const startStr = toLocalDateString(startDate);
+    const endStr = toLocalDateString(now);
     return dashboardBookings.filter(booking => {
       const raw = (booking as any).createdAt ?? (booking as any).date;
       if (raw == null || raw === '') return true;
       const bookingDate = new Date(raw);
       if (Number.isNaN(bookingDate.getTime())) return true;
-      return bookingDate >= startDate && bookingDate <= now;
+      const bookingStr = toLocalDateString(bookingDate);
+      return bookingStr >= startStr && bookingStr <= endStr;
     });
   };
 
