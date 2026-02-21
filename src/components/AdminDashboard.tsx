@@ -22,12 +22,12 @@ const AdminDashboard: React.FC = () => {
   const [agentChartType, setAgentChartType] = React.useState<'bookings' | 'profit' | 'revenue'>('bookings');
   const [dashboardPeriod, setDashboardPeriod] = React.useState<'week' | 'month' | 'year'>('year');
 
-  // Refresh data on mount
+  // Refresh data on mount and when dashboard is shown (so dashboard always has latest like Bookings tab)
   React.useEffect(() => {
     fetchBookings();
     fetchInquiries();
-    fetchAgents(); // Ensure agents are loaded
-  }, []);
+    fetchAgents();
+  }, [fetchBookings, fetchInquiries, fetchAgents]);
 
   // Helper function to calculate profit from booking
   const getProfit = (booking: any): number => {
@@ -63,7 +63,7 @@ const AdminDashboard: React.FC = () => {
     return 0;
   };
 
-  // Filter bookings by dashboard period
+  // Filter bookings by dashboard period (use createdAt = when booking was made; include if date missing/invalid so none are hidden)
   const getFilteredBookingsByDashboardPeriod = () => {
     const now = new Date();
     let startDate: Date;
@@ -84,7 +84,11 @@ const AdminDashboard: React.FC = () => {
     }
 
     return bookings.filter(booking => {
-      const bookingDate = new Date(booking.createdAt || (booking as any).date || 0);
+      // Prefer createdAt (when booking was made); do not use travel date so future trips are not excluded
+      const raw = (booking as any).createdAt ?? (booking as any).date;
+      if (raw == null || raw === '') return true; // include if no date so we don't hide bookings
+      const bookingDate = new Date(raw);
+      if (Number.isNaN(bookingDate.getTime())) return true; // include if invalid date
       return bookingDate >= startDate && bookingDate <= now;
     });
   };
@@ -176,7 +180,7 @@ const AdminDashboard: React.FC = () => {
 
 
 
-  // Filter bookings based on dashboard period
+  // Filter bookings based on dashboard period (same logic: use createdAt, include if missing/invalid)
   const getFilteredBookings = () => {
     const now = new Date();
     let startDate: Date;
@@ -197,7 +201,10 @@ const AdminDashboard: React.FC = () => {
     }
 
     return bookings.filter(booking => {
-      const bookingDate = new Date(booking.createdAt || (booking as any).date || 0);
+      const raw = (booking as any).createdAt ?? (booking as any).date;
+      if (raw == null || raw === '') return true;
+      const bookingDate = new Date(raw);
+      if (Number.isNaN(bookingDate.getTime())) return true;
       return bookingDate >= startDate && bookingDate <= now;
     });
   };

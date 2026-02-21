@@ -23,10 +23,7 @@ const normalizeApiBase = (baseUrl: string | undefined): string => {
   if (baseUrl) {
     try {
       const url = new URL(baseUrl);
-      if (url.hostname === 'booking.mustafatravelsandtour.com') {
-        url.hostname = 'www.booking.mustafatravelsandtour.com';
-        return url.toString().replace(/\/$/, '');
-      }
+      // Keep booking.mustafatravelsandtour.com as-is (no www prefix for subdomain)
       return baseUrl.replace(/\/$/, '');
     } catch {
       const normalized = normalizeHostname(baseUrl);
