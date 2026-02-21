@@ -17,17 +17,40 @@ import {
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { bookings, inquiries, agents, approveChange, rejectChange, fetchAgents, fetchBookings, fetchInquiries } = useData();
+  const { inquiries, agents, approveChange, rejectChange, fetchAgents, fetchInquiries } = useData();
   const [chartType, setChartType] = React.useState<'bookings' | 'profit' | 'revenue'>('bookings');
   const [agentChartType, setAgentChartType] = React.useState<'bookings' | 'profit' | 'revenue'>('bookings');
   const [dashboardPeriod, setDashboardPeriod] = React.useState<'week' | 'month' | 'year'>('year');
 
-  // Refresh data on mount and when dashboard is shown (so dashboard always has latest like Bookings tab)
+  // Dashboard fetches its own bookings (same as Bookings tab) so stats/charts always show data
+  const [dashboardBookings, setDashboardBookings] = React.useState<any[]>([]);
+  const loadDashboardBookings = React.useCallback(async () => {
+    try {
+      const usr = JSON.parse(localStorage.getItem('user') || '{}');
+      const endpoint = usr?.role === 'admin' ? '/api/bookings' : '/api/bookings/my';
+      const { data } = await http.get(endpoint);
+      const raw = Array.isArray(data) ? data : data?.data || data?.bookings || [];
+      const idOf = (v: any) => (v && (v._id || v.id)) ? String(v._id || v.id) : undefined;
+      const toMoneyString = (v: any) => { if (v == null) return undefined; if (typeof v === 'number') return `$${v}`; const n = Number(v); return Number.isFinite(n) ? `$${n}` : undefined; };
+      const mapped = raw.map((b: any) => ({
+        ...b,
+        id: idOf(b),
+        agentId: b?.agentId ?? (typeof b?.agent === 'string' ? b.agent : idOf(b?.agent?._id ?? b?.agent?.id)),
+        agentName: (typeof b?.agent === 'object' && b?.agent?.name) ? b.agent.name : b?.agentName ?? '',
+        amount: toMoneyString(b?.amount ?? b?.totalAmount),
+      }));
+      setDashboardBookings(mapped);
+    } catch (e) {
+      console.error('Dashboard fetch bookings failed', e);
+      setDashboardBookings([]);
+    }
+  }, []);
+
   React.useEffect(() => {
-    fetchBookings();
+    loadDashboardBookings();
     fetchInquiries();
     fetchAgents();
-  }, [fetchBookings, fetchInquiries, fetchAgents]);
+  }, [loadDashboardBookings, fetchInquiries, fetchAgents]);
 
   // Helper function to calculate profit from booking
   const getProfit = (booking: any): number => {
@@ -83,7 +106,7 @@ const AdminDashboard: React.FC = () => {
         startDate = new Date(now.getFullYear(), 0, 1);
     }
 
-    return bookings.filter(booking => {
+    return dashboardBookings.filter(booking => {
       // Prefer createdAt (when booking was made); do not use travel date so future trips are not excluded
       const raw = (booking as any).createdAt ?? (booking as any).date;
       if (raw == null || raw === '') return true; // include if no date so we don't hide bookings
@@ -200,7 +223,7 @@ const AdminDashboard: React.FC = () => {
         startDate = new Date(now.getFullYear(), 0, 1);
     }
 
-    return bookings.filter(booking => {
+    return dashboardBookings.filter(booking => {
       const raw = (booking as any).createdAt ?? (booking as any).date;
       if (raw == null || raw === '') return true;
       const bookingDate = new Date(raw);
@@ -1227,7 +1250,7 @@ const AdminDashboard: React.FC = () => {
           doc.text(`Amount: ${formatCurrency(data.paymentReceived.amount || 0)}`, margin + 25, y + 38);
           doc.text(`Method: ${(data.paymentReceived.method || '—').replace('_', ' ').toUpperCase()}`, margin + 25, y + 52);
           if (data.paymentReceived.date) {
-            doc.text(`Date: ${formatDate(data.paymentReceived.date)}`, margin + 25, y + 66);
+            doc.text(`Date: ${formatDatePdf(data.paymentReceived.date)}`, margin + 25, y + 66);
           }
           if (data.paymentReceived.reference) {
             doc.text(`Ref: ${data.paymentReceived.reference}`, margin + 25, y + 80);
@@ -1505,7 +1528,7 @@ const AdminDashboard: React.FC = () => {
             onClick={() => {
               console.log('🔄 Manual refresh triggered');
               fetchAgents();
-                fetchBookings();
+                loadDashboardBookings();
             }}
               className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
           >
