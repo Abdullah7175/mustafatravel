@@ -17,29 +17,45 @@ const normalizeHostname = (hostname: string): string => {
   return hostname;
 };
 
-// Helper to normalize API base URL (handles both hostname and full URLs)
+// Helper to normalize API base URL (same pattern as Marwah/Holy so dashboard and bookings load)
 const normalizeApiBase = (baseUrl: string | undefined): string => {
-  if (!baseUrl) {
-    return typeof window !== "undefined" 
-      ? `${window.location.protocol}//${normalizeHostname(window.location.hostname)}`
-      : "https://localhost:7000";
-  }
-  
-  // If it's a full URL, normalize the hostname part
-  try {
-    const url = new URL(baseUrl);
-    if (url.hostname === 'mustafatravel.com') {
-      url.hostname = 'www.mustafatravel.com';
-      return url.toString().replace(/\/$/, ''); // Remove trailing slash
+  // If VITE_API_BASE is explicitly set, use it
+  if (baseUrl) {
+    try {
+      const url = new URL(baseUrl);
+      if (url.hostname === 'booking.mustafatravelsandtour.com') {
+        url.hostname = 'www.booking.mustafatravelsandtour.com';
+        return url.toString().replace(/\/$/, '');
+      }
+      return baseUrl.replace(/\/$/, '');
+    } catch {
+      const normalized = normalizeHostname(baseUrl);
+      return typeof window !== "undefined"
+        ? `${window.location.protocol}//${normalized}`
+        : `https://${normalized}`;
     }
-    return baseUrl.replace(/\/$/, ''); // Remove trailing slash
-  } catch {
-    // If it's not a valid URL, treat it as hostname
-    const normalized = normalizeHostname(baseUrl);
-    return typeof window !== "undefined"
-      ? `${window.location.protocol}//${normalized}`
-      : `https://${normalized}`;
   }
+
+  // When VITE_API_BASE is not set: dev → backend port; production → same-origin for proxy
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+
+    // Development: point directly to backend so /api/bookings and dashboard data load
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:7000';
+    }
+
+    // Production: use same origin so Nginx can proxy /api/* to backend
+    if (hostname.includes('mustafatravelsandtour') || hostname === 'booking.mustafatravelsandtour.com') {
+      return '';
+    }
+
+    const normalized = normalizeHostname(hostname);
+    return `${protocol}//${normalized}`;
+  }
+
+  return "http://localhost:7000";
 };
 
 const API_BASE = normalizeApiBase(import.meta.env.VITE_API_BASE);
