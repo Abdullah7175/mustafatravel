@@ -29,7 +29,8 @@ const AdminDashboard: React.FC = () => {
       const usr = JSON.parse(localStorage.getItem('user') || '{}');
       const endpoint = usr?.role === 'admin' ? '/api/bookings' : '/api/bookings/my';
       const { data } = await http.get(endpoint);
-      const raw = Array.isArray(data) ? data : data?.data || data?.bookings || [];
+      // Same parsing as Bookings.tsx so dashboard and tab always match
+      const raw = Array.isArray(data) ? data : data?.bookings ?? [];
       const idOf = (v: any) => (v && (v._id || v.id)) ? String(v._id || v.id) : undefined;
       const toMoneyString = (v: any) => { if (v == null) return undefined; if (typeof v === 'number') return `$${v}`; const n = Number(v); return Number.isFinite(n) ? `$${n}` : undefined; };
       const mapped = raw.map((b: any) => ({
