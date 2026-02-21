@@ -31,11 +31,14 @@ const AdminDashboard: React.FC = () => {
     if (!user) return;
     setDashboardBookingsError(null);
     setDashboardBookingsLoading(true);
+    const endpoint = user.role === 'admin' ? '/api/bookings' : '/api/bookings/my';
+    const hasToken = typeof localStorage !== 'undefined' && !!localStorage.getItem('token');
+    console.log('[Dashboard] Loading bookings', { endpoint, role: user.role, hasToken });
     try {
-      const endpoint = user.role === 'admin' ? '/api/bookings' : '/api/bookings/my';
       const { data } = await http.get(endpoint);
       // Same parsing as Bookings.tsx so dashboard and tab always match
       const raw = Array.isArray(data) ? data : data?.bookings ?? [];
+      console.log('[Dashboard] Bookings loaded', { count: raw.length, firstId: raw[0]?._id ?? raw[0]?.id });
       const idOf = (v: any) => (v && (v._id || v.id)) ? String(v._id || v.id) : undefined;
       const toMoneyString = (v: any) => { if (v == null) return undefined; if (typeof v === 'number') return `$${v}`; const n = Number(v); return Number.isFinite(n) ? `$${n}` : undefined; };
       const mapped = raw.map((b: any) => ({
@@ -47,10 +50,26 @@ const AdminDashboard: React.FC = () => {
       }));
       setDashboardBookings(mapped);
     } catch (e: any) {
-      console.error('Dashboard fetch bookings failed', e);
+      const status = e?.response?.status;
+      const body = e?.response?.data;
+      const backendMsg = body?.message ?? (typeof body === 'string' ? body : null);
+      const url = e?.config?.url ?? endpoint;
+      console.error('[Dashboard] Fetch bookings failed', {
+        status,
+        url,
+        backendMessage: backendMsg,
+        hasToken: !!localStorage.getItem('token'),
+        fullError: e?.message,
+        responseData: body,
+      });
       setDashboardBookings([]);
-      const msg = e?.response?.data?.message ?? (typeof e?.response?.data === 'string' ? e.response?.data : null) ?? e?.message ?? 'Failed to load bookings';
-      setDashboardBookingsError(String(msg));
+      let msg = backendMsg ?? e?.message ?? 'Failed to load bookings';
+      if (status === 401) {
+        msg = `401 Unauthorized: ${backendMsg || 'No token sent'}. Log in again or check that the request sends the auth token.`;
+      } else if (status) {
+        msg = `${status}: ${msg}`;
+      }
+      setDashboardBookingsError(msg);
     } finally {
       setDashboardBookingsLoading(false);
     }

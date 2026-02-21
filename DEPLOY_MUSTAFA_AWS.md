@@ -28,7 +28,7 @@ sudo nano /etc/nginx/sites-available/booking
 **Replace the `location /api/` block** with this (same style as Marwah):
 
 ```nginx
-    # BACKEND (Node.js API) – same pattern as Marwah
+    # BACKEND (Node.js API) – same pattern as Marwah; pass auth so dashboard gets token
     location /api {
         proxy_pass http://127.0.0.1:7000;
         proxy_http_version 1.1;
@@ -36,6 +36,7 @@ sudo nano /etc/nginx/sites-available/booking
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_set_header Origin $http_origin;
+        proxy_set_header Authorization $http_authorization;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
