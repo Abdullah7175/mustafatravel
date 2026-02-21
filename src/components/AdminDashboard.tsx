@@ -655,8 +655,11 @@ const AdminDashboard: React.FC = () => {
   // Helper functions for PDF generation (same as Bookings.tsx)
   const cleanDate = (d?: string) => {
     if (!d) return '';
+    const s = String(d).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
     const t = new Date(d);
-    return Number.isNaN(t.valueOf()) ? d : t.toISOString().slice(0, 10);
+    if (Number.isNaN(t.valueOf())) return s.slice(0, 10) || '';
+    return t.toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi', year: 'numeric', month: '2-digit', day: '2-digit' });
   };
 
   const ensureArray = <T,>(v: T[] | T | undefined | null): T[] => {
@@ -787,15 +790,18 @@ const AdminDashboard: React.FC = () => {
       const lightGray = [248, 249, 250];
       const darkGray = [75, 85, 99];
 
-      const formatDate = (d: string) => {
+      const formatDatePdf = (d: string) => {
         if (!d) return '—';
         try {
-          const date = new Date(d);
-          return date.toLocaleDateString('en-US', { 
+          const date = /^\d{4}-\d{2}-\d{2}$/.test(String(d).trim())
+            ? new Date(d + 'T12:00:00.000Z')
+            : new Date(d);
+          return date.toLocaleDateString('en-US', {
+            timeZone: 'Asia/Karachi',
             weekday: 'short',
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
           });
         } catch {
           return d;
@@ -987,17 +993,17 @@ const AdminDashboard: React.FC = () => {
       doc.setFont('helvetica', 'bold');
       doc.text('Booking Date:', labelX, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(formatDate(full.dates.bookingDate), valueX, y); y += 16;
+      doc.text(formatDatePdf(full.dates.bookingDate), valueX, y); y += 16;
       
       doc.setFont('helvetica', 'bold');
       doc.text('Departure Date:', labelX, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(formatDate(full.dates.departureDate), valueX, y); y += 16;
+      doc.text(formatDatePdf(full.dates.departureDate), valueX, y); y += 16;
       
       doc.setFont('helvetica', 'bold');
       doc.text('Return Date:', labelX, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(formatDate(full.dates.returnDate), valueX, y); y += 16;
+      doc.text(formatDatePdf(full.dates.returnDate), valueX, y); y += 16;
       
       doc.setFont('helvetica', 'bold');
       doc.text('Package:', labelX, y);
@@ -1062,8 +1068,8 @@ const AdminDashboard: React.FC = () => {
           body: full.hotels.map((h: any) => [
             h.hotelName || 'Not specified', 
             h.roomType || 'Standard', 
-            formatDate(h.checkIn), 
-            formatDate(h.checkOut)
+            formatDatePdf(h.checkIn), 
+            formatDatePdf(h.checkOut)
           ]),
           styles: { 
             fontSize: 9,
@@ -1126,7 +1132,7 @@ const AdminDashboard: React.FC = () => {
             l.from || '—', 
             l.to || '—', 
             l.vehicleType || '—', 
-            formatDate(l.date), 
+            formatDatePdf(l.date), 
             l.time || '—'
           ]),
           styles: { 
@@ -1240,7 +1246,7 @@ const AdminDashboard: React.FC = () => {
           doc.text(`Amount: ${formatCurrency(data.paymentDue.amount || 0)}`, xPos + 10, y + 38);
           doc.text(`Method: ${(data.paymentDue.method || '—').replace('_', ' ').toUpperCase()}`, xPos + 10, y + 52);
           if (data.paymentDue.dueDate) {
-            doc.text(`Due: ${formatDate(data.paymentDue.dueDate)}`, xPos + 10, y + 66);
+            doc.text(`Due: ${formatDatePdf(data.paymentDue.dueDate)}`, xPos + 10, y + 66);
           }
           if (data.paymentDue.notes) {
             doc.text(`Notes: ${data.paymentDue.notes}`, xPos + 10, y + 80);

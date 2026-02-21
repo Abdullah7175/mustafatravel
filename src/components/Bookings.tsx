@@ -63,11 +63,17 @@ type UiBooking = {
   visas?: any[];
 };
 
+/** Format for display; use Asia/Karachi so calendar date doesn't shift. */
 function formatDate(d?: string | null): string {
   if (!d) return '';
+  const s = String(d).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const dt = new Date(s + 'T12:00:00.000Z');
+    return dt.toLocaleDateString('en-US', { timeZone: 'Asia/Karachi', year: 'numeric', month: '2-digit', day: '2-digit' });
+  }
   const dt = new Date(d);
   if (Number.isNaN(dt.valueOf())) return '';
-  return dt.toISOString().slice(0, 10);
+  return dt.toLocaleDateString('en-US', { timeZone: 'Asia/Karachi', year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
 function toNumberMaybe(v: unknown): number {
@@ -91,10 +97,14 @@ function currency(n: number) {
   }
 }
 
+/** Normalize to YYYY-MM-DD in Asia/Karachi so calendar dates don't shift (e.g. 21 Feb stays 21). */
 function cleanDate(d?: string) {
   if (!d) return '';
+  const s = String(d).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   const t = new Date(d);
-  return Number.isNaN(t.valueOf()) ? d : t.toISOString().slice(0, 10);
+  if (Number.isNaN(t.valueOf())) return s.slice(0, 10) || '';
+  return t.toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi', year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
 function ensureArray<T>(v: T[] | T | undefined | null): T[] {
@@ -555,15 +565,19 @@ const Bookings: React.FC = () => {
       const darkGray = [75, 85, 99];
 
       // Helper: Format Date
-      const formatDate = (d: string) => {
+      // Helper: Format Date (Asia/Karachi so calendar date doesn't shift)
+      const formatDatePdf = (d: string) => {
         if (!d) return '—';
         try {
-          const date = new Date(d);
-          return date.toLocaleDateString('en-US', { 
+          const date = /^\d{4}-\d{2}-\d{2}$/.test(String(d).trim())
+            ? new Date(d + 'T12:00:00.000Z')
+            : new Date(d);
+          return date.toLocaleDateString('en-US', {
+            timeZone: 'Asia/Karachi',
             weekday: 'short',
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
           });
         } catch {
           return d;
@@ -786,19 +800,19 @@ const Bookings: React.FC = () => {
       doc.text('Booking Date:', labelX, y);
       doc.setFont('helvetica', 'normal');
       const bookingDateStr = full.dates.bookingDate || data?.date;
-      doc.text(formatDate(bookingDateStr), valueX, y); y += 16;
+      doc.text(formatDatePdf(bookingDateStr), valueX, y); y += 16;
       
       doc.setFont('helvetica', 'bold');
       doc.text('Departure Date:', labelX, y);
       doc.setFont('helvetica', 'normal');
       const departureDateStr = full.dates.departureDate || data?.departureDate || data?.flight?.departureDate;
-      doc.text(formatDate(departureDateStr), valueX, y); y += 16;
+      doc.text(formatDatePdf(departureDateStr), valueX, y); y += 16;
       
       doc.setFont('helvetica', 'bold');
       doc.text('Return Date:', labelX, y);
       doc.setFont('helvetica', 'normal');
       const returnDateStr = full.dates.returnDate || data?.returnDate || data?.flight?.returnDate;
-      doc.text(formatDate(returnDateStr), valueX, y); y += 16;
+      doc.text(formatDatePdf(returnDateStr), valueX, y); y += 16;
       
       doc.setFont('helvetica', 'bold');
       doc.text('Package:', labelX, y);
@@ -866,8 +880,8 @@ const Bookings: React.FC = () => {
           body: full.hotels.map((h: any) => [
             h.hotelName || 'Not specified', 
             h.roomType || 'Standard', 
-            formatDate(h.checkIn), 
-            formatDate(h.checkOut)
+            formatDatePdf(h.checkIn), 
+            formatDatePdf(h.checkOut)
           ]),
           styles: { 
             fontSize: 9,
@@ -932,7 +946,7 @@ const Bookings: React.FC = () => {
             l.from || '—', 
             l.to || '—', 
             l.vehicleType || '—', 
-            formatDate(l.date), 
+            formatDatePdf(l.date), 
             l.time || '—'
           ]),
           styles: { 
@@ -1024,7 +1038,7 @@ const Bookings: React.FC = () => {
           doc.text(`Amount: ${formatCurrency(data.paymentReceived.amount || 0)}`, margin + 25, y + 38);
           doc.text(`Method: ${(data.paymentReceived.method || '—').replace('_', ' ').toUpperCase()}`, margin + 25, y + 52);
           if (data.paymentReceived.date) {
-            doc.text(`Date: ${formatDate(data.paymentReceived.date)}`, margin + 25, y + 66);
+            doc.text(`Date: ${formatDatePdf(data.paymentReceived.date)}`, margin + 25, y + 66);
           }
           if (data.paymentReceived.reference) {
             doc.text(`Ref: ${data.paymentReceived.reference}`, margin + 25, y + 80);
@@ -1051,7 +1065,7 @@ const Bookings: React.FC = () => {
           doc.text(`Amount: ${formatCurrency(data.paymentDue.amount || 0)}`, xPos + 10, y + 38);
           doc.text(`Method: ${(data.paymentDue.method || '—').replace('_', ' ').toUpperCase()}`, xPos + 10, y + 52);
           if (data.paymentDue.dueDate) {
-            doc.text(`Due: ${formatDate(data.paymentDue.dueDate)}`, xPos + 10, y + 66);
+            doc.text(`Due: ${formatDatePdf(data.paymentDue.dueDate)}`, xPos + 10, y + 66);
           }
           if (data.paymentDue.notes) {
             doc.text(`Notes: ${data.paymentDue.notes}`, xPos + 10, y + 80);
@@ -1246,12 +1260,14 @@ const Bookings: React.FC = () => {
         }).format(amount);
       };
 
-      // Helper: Format date
+      // Helper: Format date (Asia/Karachi so calendar date doesn't shift)
       const formatDate = (d?: string | null) => {
         if (!d) return '';
         try {
-          const date = new Date(d);
-          return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+          const date = /^\d{4}-\d{2}-\d{2}$/.test(String(d).trim())
+            ? new Date(d + 'T12:00:00.000Z')
+            : new Date(d);
+          return date.toLocaleDateString('en-US', { timeZone: 'Asia/Karachi', year: 'numeric', month: '2-digit', day: '2-digit' });
         } catch {
           return d;
         }

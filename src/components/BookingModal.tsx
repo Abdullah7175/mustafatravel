@@ -131,6 +131,16 @@ function isoOrNull(v?: string | null): string | null {
   const d = new Date(v);
   return Number.isNaN(d.valueOf()) ? null : d.toISOString();
 }
+
+/** Return date-only YYYY-MM-DD for hotel check-in/out to avoid timezone shift (Pakistan/UTC). */
+function dateOnlyForHotel(v?: string | null): string {
+  if (!v) return '';
+  const s = String(v).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(v);
+  if (Number.isNaN(d.valueOf())) return s.slice(0, 10) || '';
+  return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi', year: 'numeric', month: '2-digit', day: '2-digit' });
+}
 function sanitizePNR(v: string): string {
   return v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
 }
@@ -342,20 +352,20 @@ function buildBookingPayload(formData: BookingFormData, user: MinimalUser | null
     arrivalCity: formData.arrivalCity || '',
     flightClass: formData.flightClass || 'economy',
 
-    // HOTELS - Use 'name' field as per database schema
+    // HOTELS - send date-only YYYY-MM-DD to avoid timezone shift
     hotels: (formData.hotels ?? []).map((h) => ({
       name: h.hotelName || h.name || '',
       hotelName: h.hotelName || h.name || '', // Keep both for compatibility
       roomType: h.roomType || '',
-      checkIn: isoOrNull(h.checkIn) || '',
-      checkOut: isoOrNull(h.checkOut) || '',
+      checkIn: dateOnlyForHotel(h.checkIn),
+      checkOut: dateOnlyForHotel(h.checkOut),
     })),
     hotel: {
       name: formData.hotelName || '',
       hotelName: formData.hotelName || '', // Keep both for compatibility
       roomType: formData.roomType || '',
-      checkIn: isoOrNull(formData.checkIn) || '',
-      checkOut: isoOrNull(formData.checkOut) || '',
+      checkIn: dateOnlyForHotel(formData.checkIn),
+      checkOut: dateOnlyForHotel(formData.checkOut),
     },
 
     // VISAS - save in the structure expected by database
