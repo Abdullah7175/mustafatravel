@@ -23,7 +23,6 @@ const normalizeApiBase = (baseUrl: string | undefined): string => {
   if (baseUrl) {
     try {
       const url = new URL(baseUrl);
-      // Keep booking.mustafatravelsandtour.com as-is (no www prefix for subdomain)
       return baseUrl.replace(/\/$/, '');
     } catch {
       const normalized = normalizeHostname(baseUrl);
@@ -33,21 +32,20 @@ const normalizeApiBase = (baseUrl: string | undefined): string => {
     }
   }
 
-  // When VITE_API_BASE is not set: dev → backend port; production → same-origin for proxy
+  // When VITE_API_BASE is not set: dev → backend port; production → current origin (Nginx proxies /api to backend)
   if (typeof window !== "undefined") {
     const hostname = window.location.hostname;
-    const protocol = window.location.protocol;
 
-    // Development: point directly to backend so /api/bookings and dashboard data load
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'http://localhost:7000';
     }
 
-    // Production: use same origin so Nginx can proxy /api/* to backend
+    // Production: use full origin so /api/bookings → https://booking.mustafatravelsandtour.com/api/bookings (Nginx proxies to backend)
     if (hostname.includes('mustafatravelsandtour') || hostname === 'booking.mustafatravelsandtour.com') {
-      return '';
+      return window.location.origin;
     }
 
+    const protocol = window.location.protocol;
     const normalized = normalizeHostname(hostname);
     return `${protocol}//${normalized}`;
   }
