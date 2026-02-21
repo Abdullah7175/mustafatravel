@@ -24,10 +24,15 @@ const AdminDashboard: React.FC = () => {
 
   // Dashboard fetches its own bookings (same as Bookings tab) so stats/charts always show data
   const [dashboardBookings, setDashboardBookings] = React.useState<any[]>([]);
+  const [dashboardBookingsLoading, setDashboardBookingsLoading] = React.useState(false);
+  const [dashboardBookingsError, setDashboardBookingsError] = React.useState<string | null>(null);
+
   const loadDashboardBookings = React.useCallback(async () => {
+    if (!user) return;
+    setDashboardBookingsError(null);
+    setDashboardBookingsLoading(true);
     try {
-      const usr = JSON.parse(localStorage.getItem('user') || '{}');
-      const endpoint = usr?.role === 'admin' ? '/api/bookings' : '/api/bookings/my';
+      const endpoint = user.role === 'admin' ? '/api/bookings' : '/api/bookings/my';
       const { data } = await http.get(endpoint);
       // Same parsing as Bookings.tsx so dashboard and tab always match
       const raw = Array.isArray(data) ? data : data?.bookings ?? [];
@@ -41,17 +46,21 @@ const AdminDashboard: React.FC = () => {
         amount: toMoneyString(b?.amount ?? b?.totalAmount),
       }));
       setDashboardBookings(mapped);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Dashboard fetch bookings failed', e);
       setDashboardBookings([]);
+      const msg = e?.response?.data?.message ?? (typeof e?.response?.data === 'string' ? e.response?.data : null) ?? e?.message ?? 'Failed to load bookings';
+      setDashboardBookingsError(String(msg));
+    } finally {
+      setDashboardBookingsLoading(false);
     }
-  }, []);
+  }, [user]);
 
   React.useEffect(() => {
-    loadDashboardBookings();
+    if (user) loadDashboardBookings();
     fetchInquiries();
     fetchAgents();
-  }, [loadDashboardBookings, fetchInquiries, fetchAgents]);
+  }, [user, loadDashboardBookings, fetchInquiries, fetchAgents]);
 
   // Helper function to calculate profit from booking
   const getProfit = (booking: any): number => {
@@ -1439,7 +1448,10 @@ const AdminDashboard: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user?.name}</p>
+          <p className="text-gray-600">
+            Welcome back, {user?.name}
+            {dashboardBookingsLoading && <span className="ml-2 text-sm text-gray-500">(loading bookings…)</span>}
+          </p>
         </div>
         {/* Dashboard Period Filter Buttons */}
         <div className="mt-4 sm:mt-0 flex items-center space-x-2">
@@ -1475,6 +1487,23 @@ const AdminDashboard: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Bookings load error — same API as Bookings tab; if this shows, backend or auth issue */}
+      {dashboardBookingsError && (
+        <div className="flex items-center justify-between gap-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+            <span className="text-amber-800">{dashboardBookingsError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => loadDashboardBookings()}
+            className="px-3 py-1.5 text-sm bg-amber-600 text-white rounded hover:bg-amber-700"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
