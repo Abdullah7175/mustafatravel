@@ -20,7 +20,7 @@ const AdminDashboard: React.FC = () => {
   const { inquiries, agents, approveChange, rejectChange, fetchAgents, fetchInquiries } = useData();
   const [chartType, setChartType] = React.useState<'bookings' | 'profit' | 'revenue'>('bookings');
   const [agentChartType, setAgentChartType] = React.useState<'bookings' | 'profit' | 'revenue'>('bookings');
-  const [dashboardPeriod, setDashboardPeriod] = React.useState<'week' | 'month' | 'year'>('year');
+  const [dashboardPeriod, setDashboardPeriod] = React.useState<'all' | 'week' | 'month' | 'year'>('all');
 
   // Dashboard fetches its own bookings (same as Bookings tab) so stats/charts always show data
   const [dashboardBookings, setDashboardBookings] = React.useState<any[]>([]);
@@ -117,6 +117,8 @@ const AdminDashboard: React.FC = () => {
 
   // Filter bookings by dashboard period (use createdAt = when booking was made; include if date missing/invalid so none are hidden)
   const getFilteredBookingsByDashboardPeriod = () => {
+    if (dashboardPeriod === 'all') return dashboardBookings;
+
     const now = new Date();
     let startDate: Date;
 
@@ -132,24 +134,23 @@ const AdminDashboard: React.FC = () => {
         startDate = new Date(now.getFullYear(), 0, 1);
         break;
       default:
-        startDate = new Date(now.getFullYear(), 0, 1);
+        return dashboardBookings;
     }
 
     return dashboardBookings.filter(booking => {
-      // Prefer createdAt (when booking was made); do not use travel date so future trips are not excluded
       const raw = (booking as any).createdAt ?? (booking as any).date;
-      if (raw == null || raw === '') return true; // include if no date so we don't hide bookings
+      if (raw == null || raw === '') return true;
       const bookingDate = new Date(raw);
-      if (Number.isNaN(bookingDate.getTime())) return true; // include if invalid date
+      if (Number.isNaN(bookingDate.getTime())) return true;
       return bookingDate >= startDate && bookingDate <= now;
     });
   };
 
   // Filter inquiries by dashboard period
   const getFilteredInquiriesByDashboardPeriod = () => {
+    if (dashboardPeriod === 'all') return inquiries;
     const now = new Date();
     let startDate: Date;
-
     switch (dashboardPeriod) {
       case 'week':
         startDate = new Date(now);
@@ -162,9 +163,8 @@ const AdminDashboard: React.FC = () => {
         startDate = new Date(now.getFullYear(), 0, 1);
         break;
       default:
-        startDate = new Date(now.getFullYear(), 0, 1);
+        return inquiries;
     }
-
     return inquiries.filter(inquiry => {
       const inquiryDate = new Date(inquiry.createdAt || 0);
       return inquiryDate >= startDate && inquiryDate <= now;
@@ -192,10 +192,11 @@ const AdminDashboard: React.FC = () => {
   // Get period label for trends
   const getPeriodLabel = () => {
     switch (dashboardPeriod) {
+      case 'all': return 'all time';
       case 'week': return 'this week';
       case 'month': return 'this month';
       case 'year': return 'this year';
-      default: return 'this month';
+      default: return 'all time';
     }
   };
 
@@ -234,9 +235,9 @@ const AdminDashboard: React.FC = () => {
 
   // Filter bookings based on dashboard period (same logic: use createdAt, include if missing/invalid)
   const getFilteredBookings = () => {
+    if (dashboardPeriod === 'all') return dashboardBookings;
     const now = new Date();
     let startDate: Date;
-
     switch (dashboardPeriod) {
       case 'week':
         startDate = new Date(now);
@@ -249,9 +250,8 @@ const AdminDashboard: React.FC = () => {
         startDate = new Date(now.getFullYear(), 0, 1);
         break;
       default:
-        startDate = new Date(now.getFullYear(), 0, 1);
+        return dashboardBookings;
     }
-
     return dashboardBookings.filter(booking => {
       const raw = (booking as any).createdAt ?? (booking as any).date;
       if (raw == null || raw === '') return true;
@@ -546,17 +546,14 @@ const AdminDashboard: React.FC = () => {
   }, [filteredBookings, agentChartType, agents, user]);
 
   // Helper function to format date labels based on period
-  const formatDateLabel = (date: Date, period: 'week' | 'month' | 'year'): string => {
+  const formatDateLabel = (date: Date, period: 'all' | 'week' | 'month' | 'year'): string => {
     if (period === 'week') {
-      // Show day name and date (e.g., "Mon, Jan 1")
       return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    } else if (period === 'month') {
-      // Show day number (e.g., "1", "2", "31")
-      return date.getDate().toString();
-    } else {
-      // Show month name (e.g., "Jan", "Feb", "Mar")
-      return date.toLocaleDateString('en-US', { month: 'short' });
     }
+    if (period === 'month') {
+      return date.getDate().toString();
+    }
+    return date.toLocaleDateString('en-US', { month: 'short' });
   };
 
   // Calculate performance data grouped by dates based on selected period
@@ -573,7 +570,6 @@ const AdminDashboard: React.FC = () => {
     let startDate: Date;
 
     if (dashboardPeriod === 'week') {
-      // 7 days: today and 6 days before
       for (let i = 6; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(now.getDate() - i);
@@ -584,21 +580,17 @@ const AdminDashboard: React.FC = () => {
       startDate.setDate(now.getDate() - 6);
       startDate.setHours(0, 0, 0, 0);
     } else if (dashboardPeriod === 'month') {
-      // Days of current month
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
       const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-      
       for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(currentYear, currentMonth, day);
-        dateBuckets.push(date);
+        dateBuckets.push(new Date(currentYear, currentMonth, day));
       }
       startDate = new Date(currentYear, currentMonth, 1);
     } else {
-      // 12 months of the year
+      // year or all: 12 months (all = show all bookings, chart by month)
       for (let month = 0; month < 12; month++) {
-        const date = new Date(now.getFullYear(), month, 1);
-        dateBuckets.push(date);
+        dateBuckets.push(new Date(now.getFullYear(), month, 1));
       }
       startDate = new Date(now.getFullYear(), 0, 1);
     }
@@ -608,12 +600,11 @@ const AdminDashboard: React.FC = () => {
     
     // Initialize all date buckets with zeros
     dateBuckets.forEach(date => {
-      const key = dashboardPeriod === 'week' 
-        ? date.toISOString().split('T')[0] // Full date for weekly
-        : dashboardPeriod === 'month'
-        ? date.getDate().toString() // Day number for monthly
-        : date.getMonth().toString(); // Month index for yearly
-      
+      const key = (dashboardPeriod === 'week')
+        ? date.toISOString().split('T')[0]
+        : (dashboardPeriod === 'month')
+        ? date.getDate().toString()
+        : date.getMonth().toString();
       dateMetricsMap[key] = { bookings: 0, profit: 0, revenue: 0 };
     });
 
@@ -631,27 +622,20 @@ const AdminDashboard: React.FC = () => {
       let bucketKey: string;
       
       if (dashboardPeriod === 'week') {
-        // Match to specific day
         const dayStart = new Date(bookingDate);
         dayStart.setHours(0, 0, 0, 0);
         bucketKey = dayStart.toISOString().split('T')[0];
       } else if (dashboardPeriod === 'month') {
-        // Match to day of month (only if in current month)
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
         if (bookingDate.getMonth() === currentMonth && bookingDate.getFullYear() === currentYear) {
           bucketKey = bookingDate.getDate().toString();
         } else {
-          return; // Skip bookings not in current month
+          return;
         }
       } else {
-        // Match to month (only if in current year)
-        const currentYear = now.getFullYear();
-        if (bookingDate.getFullYear() === currentYear) {
-          bucketKey = bookingDate.getMonth().toString();
-        } else {
-          return; // Skip bookings not in current year
-        }
+        // year or all: group by month (all years for 'all')
+        bucketKey = bookingDate.getMonth().toString();
       }
 
       if (dateMetricsMap[bucketKey]) {
@@ -1475,6 +1459,16 @@ const AdminDashboard: React.FC = () => {
         {/* Dashboard Period Filter Buttons */}
         <div className="mt-4 sm:mt-0 flex items-center space-x-2">
           <button
+            onClick={() => setDashboardPeriod('all')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              dashboardPeriod === 'all'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            All
+          </button>
+          <button
             onClick={() => setDashboardPeriod('week')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               dashboardPeriod === 'week'
@@ -1586,6 +1580,7 @@ const AdminDashboard: React.FC = () => {
         </div>
         </div>
         <div className="text-sm text-gray-500 mb-6">
+          {dashboardPeriod === 'all' && 'All time'}
           {dashboardPeriod === 'week' && 'Current Week'}
           {dashboardPeriod === 'month' && 'Current Month'}
           {dashboardPeriod === 'year' && 'Current Year'}
@@ -1611,7 +1606,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             ) : filteredBookings.length === 0 ? (
               <div>
-                <p>No booking data available for {dashboardPeriod === 'week' ? 'current week' : dashboardPeriod === 'month' ? 'current month' : 'current year'}</p>
+                <p>No booking data available for {dashboardPeriod === 'all' ? 'all time' : dashboardPeriod === 'week' ? 'current week' : dashboardPeriod === 'month' ? 'current month' : 'current year'}</p>
                 <p className="text-sm mt-2">Try selecting a different time period</p>
               </div>
             ) : (
@@ -1669,6 +1664,7 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
         <div className="text-sm text-gray-500 mb-6">
+          {dashboardPeriod === 'all' && 'All time'}
           {dashboardPeriod === 'week' && 'Current Week'}
           {dashboardPeriod === 'month' && 'Current Month'}
           {dashboardPeriod === 'year' && 'Current Year'}
@@ -1688,7 +1684,7 @@ const AdminDashboard: React.FC = () => {
           <div className="text-center py-8 text-gray-500">
             {filteredBookings.length === 0 ? (
               <div>
-                <p>No booking data available for {dashboardPeriod === 'week' ? 'current week' : dashboardPeriod === 'month' ? 'current month' : 'current year'}</p>
+                <p>No booking data available for {dashboardPeriod === 'all' ? 'all time' : dashboardPeriod === 'week' ? 'current week' : dashboardPeriod === 'month' ? 'current month' : 'current year'}</p>
                 <p className="text-sm mt-2">Try selecting a different time period</p>
               </div>
             ) : (
